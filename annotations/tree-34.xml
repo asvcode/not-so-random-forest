@@ -1,0 +1,26 @@
+<annotation>
+	<folder>tmp</folder>
+	<filename>tree-34.jpg</filename>
+	<path>/Users/vyettella/Desktop/tmp/tree-34.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>660</width>
+		<height>825</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>tree</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>93</xmin>
+			<ymin>187</ymin>
+			<xmax>491</xmax>
+			<ymax>709</ymax>
+		</bndbox>
+	</object>
+</annotation>

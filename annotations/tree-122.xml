@@ -1,0 +1,26 @@
+<annotation>
+	<folder>tmp</folder>
+	<filename>tree-122.jpg</filename>
+	<path>/Users/vyettella/Desktop/tmp/tree-122.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>2448</width>
+		<height>2050</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>tree</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>374</xmin>
+			<ymin>722</ymin>
+			<xmax>1161</xmax>
+			<ymax>1862</ymax>
+		</bndbox>
+	</object>
+</annotation>

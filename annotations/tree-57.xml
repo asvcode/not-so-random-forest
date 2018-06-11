@@ -1,0 +1,26 @@
+<annotation>
+	<folder>tmp</folder>
+	<filename>tree-57.png</filename>
+	<path>/Users/vyettella/Desktop/tmp/tree-57.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>850</width>
+		<height>1118</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>tree</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>216</xmin>
+			<ymin>120</ymin>
+			<xmax>663</xmax>
+			<ymax>917</ymax>
+		</bndbox>
+	</object>
+</annotation>
