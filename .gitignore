@@ -1,2 +1,5 @@
 *.h5
 *.p
+data/**/*.png
+data/**/*.jpg
+data/**/*.csv
