@@ -96,13 +96,16 @@ def species_predictor(tree_images, classifier_model):
     return(species_probabilities)
 
 # function to direct calls to detector and classifier models and write inference results to disk
-def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference.h5',
- classifier='inceptionv3_imagenet_unfrozen_20_epochs.h5'):
+def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
+ classifier='inceptionv3_imagenet_unfrozen_20_epochs'):
 
 
     backend.tensorflow_backend.set_session(get_session())
-    detector_model = models.load_model('./saved_models/' + detector, backbone_name='resnet50')
-    classifier_model = load_model(filepath='./saved_models/' + classifier)
+    detector_model = models.load_model('./saved_models/' + detector + '.h5', backbone_name='resnet50')
+
+    classifier_model = load_model(filepath='./saved_models/' + classifier+'.h5')
+    classifier_history = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_history.p', 'rb'))
+    class_indices = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_class_indices.p', 'rb'))
 
     files = glob.glob(image_folder + '/*')
 
@@ -122,15 +125,15 @@ def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference.h5',
         prefix2 = prefix.split('/')[1]
 
         with open(image_folder + '/' + prefix2 + '_inference.p', 'wb') as handle:
-            pickle.dump({"tree_images": tree_images, "species_probabilities": species_probabilities, "image": unscaled_image, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
+            pickle.dump({"tree_images": tree_images, "species": class_indices, "species_probabilities": species_probabilities, "image": unscaled_image, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
 
 
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description='Script for running inference on images.')
     parser.add_argument('--dir', help='Folder containing images to run inference on.')
-    parser.add_argument('--detector', help='Model for tree detection.', default='resnet50_csv_50_epochs_inference.h5')
-    parser.add_argument('--classifier', help ='Model for species classification.', default='inceptionv3_imagenet_unfrozen_20_epochs.h5')
+    parser.add_argument('--detector', help='Model for tree detection.', default='resnet50_csv_50_epochs_inference')
+    parser.add_argument('--classifier', help ='Model for species classification.', default='date_palm_species_classifier_MobileNet_imagenet_20_epochs_unfrozen')
     return parser.parse_args(args)
 
 

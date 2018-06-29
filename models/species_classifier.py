@@ -37,7 +37,7 @@ def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefi
 
     # data generators
     image_generator = ImageDataGenerator(rescale=1./255)
-    batch_size = 5
+    batch_size = 20
     epochs = int(epochs)
 
     train_generator = image_generator.flow_from_directory(image_folder + '/train/',
