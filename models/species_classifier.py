@@ -2,6 +2,7 @@
 
 # import keras
 import keras
+from keras import regularizers
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
@@ -16,7 +17,7 @@ from keras.applications.resnet50 import ResNet50
 from keras.applications.mobilenet import MobileNet
 from keras.models import Model, load_model
 from keras import backend as K
-from keras.callbacks import ModelCheckpoint
+#from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam, SGD, RMSprop
 from keras.initializers import TruncatedNormal, he_normal
 from keras.callbacks import LearningRateScheduler, ReduceLROnPlateau
@@ -36,14 +37,21 @@ from PIL import Image
 def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefix='None', epochs='20'):
 
     # data generators
-    image_generator = ImageDataGenerator(rescale=1./255)
+    image_generator = ImageDataGenerator(width_shift_range=0.2,
+        height_shift_range=0.2,
+        rescale=1./255,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest')
+
     batch_size = 20
     epochs = int(epochs)
 
     train_generator = image_generator.flow_from_directory(image_folder + '/train/',
                                                            batch_size=batch_size, target_size=(224, 224), class_mode='categorical')
 
-    validation_generator = image_generator.flow_from_directory(image_folder + '/validate',
+    validation_generator = image_generator.flow_from_directory(image_folder + '/validate/',
                                                            batch_size=batch_size, target_size=(224, 224), class_mode='categorical')
 
     # instantiate model
@@ -61,17 +69,17 @@ def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefi
         base_model = MobileNet(weights="imagenet", include_top=False, input_shape=(224,224,3))
     elif classifier == 'Simple':
         base_model = Sequential()
-        base_model.add(Conv2D(32, (3, 3), input_shape=(224, 224, 3)))
-        base_model.add(Activation('relu'))
-        base_model.add(MaxPooling2D(pool_size=(2, 2)))
+        base_model.add(Conv2D(32, (3, 3), input_shape=(224, 224, 3)), name='conv2d_1')
+        base_model.add(Activation('relu'), name='activation_1')
+        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_1')
 
-        base_model.add(Conv2D(32, (3, 3)))
-        base_model.add(Activation('relu'))
-        base_model.add(MaxPooling2D(pool_size=(2, 2)))
+        base_model.add(Conv2D(32, (3, 3)), name='conv2d_2')
+        base_model.add(Activation('relu'), name='activation_2')
+        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_2')
 
-        base_model.add(Conv2D(64, (3, 3)))
-        base_model.add(Activation('relu'))
-        base_model.add(MaxPooling2D(pool_size=(2, 2)))
+        base_model.add(Conv2D(64, (3, 3)), name='conv2d_3')
+        base_model.add(Activation('relu'), name='activation_3')
+        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_3')
 
 
     # freeze backbone layers in base model
@@ -87,10 +95,10 @@ def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefi
     # attach custom layer on top of base model
     x = base_model.output
     x = Flatten()(x)
-    x = Dense(128, activation="relu")(x)
+    x = Dense(128, activation="relu", kernel_regularizer=regularizers.l2(0.1))(x)
     output = Dense(len(train_generator.class_indices.keys()), activation="softmax", name="y")(x)
     model = Model(inputs=base_model.input, outputs=output)
-    adam = Adam(lr=0.0001)
+    adam = Adam(lr=0.0001, momentum=0.01, clipvalue=0.5)
     sgd = SGD(lr=0.0001)
     #print(model.summary())
 
@@ -107,17 +115,23 @@ def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefi
         model_name = save_prefix + '_' + model_name
 
     filepath = 'saved_models/species_classifiers/' + model_name + '.h5'
-    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
-    callbacks_list = [checkpoint]
+    #checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    #callbacks_list = [checkpoint]
+
+    #history = model.fit_generator(train_generator, \
+    #steps_per_epoch=len(train_generator.filenames)//batch_size, \
+    #epochs=epochs,validation_data=validation_generator, \
+    #validation_steps=len(validation_generator.filenames)//batch_size, callbacks=callbacks_list, verbose=0)
+
+    print(len(train_generator.filenames)//batch_size)
+    print(len(validation_generator.filenames)//batch_size)
 
     history = model.fit_generator(train_generator, \
-    samples_per_epoch=len(train_generator.filenames)//batch_size, \
+    steps_per_epoch=len(train_generator.filenames)//batch_size, \
     epochs=epochs,validation_data=validation_generator, \
-    validation_steps=len(validation_generator.filenames)//batch_size, callbacks=callbacks_list, verbose=0)
+    validation_steps=len(validation_generator.filenames)//batch_size)
 
-
-
-    #model.save('saved_models/species_classifiers/' + model_name + '.h5')
+    model.save('saved_models/species_classifiers/' + model_name + '.h5')
 
     pickle.dump(history.history, open('saved_models/species_classifiers/' + model_name + '_history.p', 'wb'))
 

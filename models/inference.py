@@ -16,9 +16,12 @@ import matplotlib.pyplot as plt
 import imghdr
 
 # import keras
+import keras
 from keras import backend
 from keras.preprocessing import image
 from keras.models import load_model
+from keras.utils.generic_utils import CustomObjectScope
+
 
 # import keras_retinanet
 from keras_retinanet import models
@@ -86,24 +89,30 @@ def species_predictor(tree_images, classifier_model):
         img = image.img_to_array(resized_tree_image)
         img = np.expand_dims(img, axis=0)
         resized_tree_images.append(img)
+    if resized_tree_images:
+        resized_tree_images = np.vstack(resized_tree_images)
 
-    resized_tree_images = np.vstack(resized_tree_images)
-
-    start = time.time()
-    species_probabilities = classifier_model.predict(resized_tree_images)
-    print("classification time: ", time.time() - start)
+        start = time.time()
+        species_probabilities = classifier_model.predict(resized_tree_images)
+        print("classification time: ", time.time() - start)
+    else:
+        species_probabilities = []
 
     return(species_probabilities)
 
 # function to direct calls to detector and classifier models and write inference results to disk
 def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
- classifier='inceptionv3_imagenet_unfrozen_20_epochs'):
+ classifier='date_palm_species_classifier_ResNet50_imagenet_1_epochs_unfrozen'):
 
 
     backend.tensorflow_backend.set_session(get_session())
-    detector_model = models.load_model('./saved_models/' + detector + '.h5', backbone_name='resnet50')
+    detector_model = models.load_model('./saved_models/tree_detectors/' + detector + '.h5', backbone_name='resnet50')
 
-    classifier_model = load_model(filepath='./saved_models/' + classifier+'.h5')
+    # custom fix for weird error during inferncing with MobileNet
+    #with CustomObjectScope({'relu6': keras.applications.mobilenet.mobilenet.relu6,'DepthwiseConv2D': keras.applications.mobilenet.mobilenet.layers.DepthwiseConv2D}):
+        #classifier_model = load_model(filepath='./saved_models/species_classifiers/' + classifier+'.h5')
+
+    classifier_model = load_model(filepath='./saved_models/species_classifiers/' + classifier+'.h5')
     classifier_history = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_history.p', 'rb'))
     class_indices = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_class_indices.p', 'rb'))
 
@@ -133,7 +142,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description='Script for running inference on images.')
     parser.add_argument('--dir', help='Folder containing images to run inference on.')
     parser.add_argument('--detector', help='Model for tree detection.', default='resnet50_csv_50_epochs_inference')
-    parser.add_argument('--classifier', help ='Model for species classification.', default='date_palm_species_classifier_MobileNet_imagenet_20_epochs_unfrozen')
+    parser.add_argument('--classifier', help ='Model for species classification.', default='date_palm_species_classifier_ResNet50_imagenet_1_epochs_unfrozen')
     return parser.parse_args(args)
 
 
