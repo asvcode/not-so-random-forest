@@ -33,17 +33,37 @@ import cv2
 import time
 from PIL import Image
 
+def simple_cnn(n_layers):
+
+    IMAGE_SHAPE = (224, 224, 3)
+    FILTER = (3,3)
+
+    MIN_NEURONS = 20
+    MAX_NEURONS = 120
+
+    n_neurons = np.arange(MIN_NEURONS, MAX_NEURONS, np.floor(MAX_NEURONS / (n_layers + 1)))
+    n_neurons = n_neurons.astype(np.int32)
+
+    # Define model
+    model = Sequential()
+
+    # Add convolutional layers
+    for i in range(0, n_layers):
+        if i == 0:
+            model.add(Conv2D(n_neurons[i], FILTER, input_shape = IMAGE_SHAPE))
+        else:
+            model.add(Conv2D(n_neurons[i], FILTER))
+        model.add(Activation('relu'))
+
+    # Add max pooling layer
+    model.add(MaxPooling2D(pool_size=(2,2)))
+
+    return model
 
 def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefix='None', epochs='20'):
 
     # data generators
-    image_generator = ImageDataGenerator(width_shift_range=0.2,
-        height_shift_range=0.2,
-        rescale=1./255,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest')
+    image_generator = ImageDataGenerator(rescale=1./255)
 
     batch_size = 20
     epochs = int(epochs)
@@ -69,36 +89,45 @@ def train_classifier(image_folder, classifier, freeze_backbone=False, save_prefi
         base_model = MobileNet(weights="imagenet", include_top=False, input_shape=(224,224,3))
     elif classifier == 'Simple':
         base_model = Sequential()
-        base_model.add(Conv2D(32, (3, 3), input_shape=(224, 224, 3)), name='conv2d_1')
-        base_model.add(Activation('relu'), name='activation_1')
-        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_1')
+        base_model.add(Conv2D(32, (3, 3), input_shape=(224, 224, 3), name='conv2d_1'))
+        base_model.add(Activation('relu', name='activation_1'))
+        base_model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_1'))
 
-        base_model.add(Conv2D(32, (3, 3)), name='conv2d_2')
-        base_model.add(Activation('relu'), name='activation_2')
-        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_2')
+        base_model.add(Conv2D(32, (3, 3), name='conv2d_2'))
+        base_model.add(Activation('relu', name='activation_2'))
+        base_model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_2'))
 
-        base_model.add(Conv2D(64, (3, 3)), name='conv2d_3')
-        base_model.add(Activation('relu'), name='activation_3')
-        base_model.add(MaxPooling2D(pool_size=(2, 2)), name='max_pooling2d_3')
+        base_model.add(Conv2D(64, (3, 3), name='conv2d_3'))
+        base_model.add(Activation('relu', name='activation_3'))
+        base_model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_3'))
+
+        
+
+        #base_model = simple_cnn(6)
 
 
     # freeze backbone layers in base model
     if freeze_backbone:
         print('All base layers have been frozen.')
         for i, layer in enumerate(base_model.layers):
+            if 'batch_normalization' in layer.name:
+                layer.momentum = 0.01
             layer.trainable = False
     else:
         print('Warning: All base layers have been unfrozen.')
-        for i, layer in enumerate(base_model.layers):
+        for i, layer in enumerate(base_model.layers[-10:]):
+            if 'batch_normalization' in layer.name:
+                layer.momentum = 0.01
             layer.trainable = True
 
     # attach custom layer on top of base model
     x = base_model.output
     x = Flatten()(x)
-    x = Dense(128, activation="relu", kernel_regularizer=regularizers.l2(0.1))(x)
+    x = Dense(128, activation="relu")(x)
+    #x = Dense(64, activation="relu", kernel_regularizer=regularizers.l2(0.1))(x)
     output = Dense(len(train_generator.class_indices.keys()), activation="softmax", name="y")(x)
     model = Model(inputs=base_model.input, outputs=output)
-    adam = Adam(lr=0.0001, momentum=0.01, clipvalue=0.5)
+    adam = Adam(lr=0.0001, clipvalue=0.5)
     sgd = SGD(lr=0.0001)
     #print(model.summary())
 

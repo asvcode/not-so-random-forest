@@ -15,6 +15,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import imghdr
 
+# import custom modules
+from utils import extract_objects
+
 # import keras
 import keras
 from keras import backend
@@ -34,16 +37,6 @@ def get_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
-
-# function to extract bounded objects given image and bounding boxes
-def extract_bounded_objects(unscaled_image, boxes, scores, score_threshold):
-    objects = []
-    for i, b in enumerate(boxes[0]):
-        if scores[0][i] < score_threshold:
-            continue
-        b = np.array(b).astype(int)
-        objects.append(unscaled_image[b[1]:b[3], b[0]:b[2], :])
-    return objects
 
 # function to predict bounding boxes on objects in an image
 def object_detector(file, detector_model):
@@ -73,7 +66,7 @@ def object_detector(file, detector_model):
     # correct for image scale
     boxes /= scale
     print(unscaled_image.shape)
-    tree_images = extract_bounded_objects(unscaled_image, boxes, scores, score_threshold=score_threshold)
+    tree_images = extract_objects(unscaled_image, boxes[0], scores[0], score_threshold=score_threshold)
     valid_boxes = [box for i, box in enumerate(boxes[0]) if scores[0][i] > score_threshold]
 
     return (tree_images, unscaled_image, valid_boxes, score_threshold)
@@ -126,16 +119,17 @@ def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
         # running object detector on image to detect trees
         (tree_images, unscaled_image, valid_boxes, score_threshold) = object_detector(file, detector_model)
 
-        # classifying detected trees
+        # running species classifier on detected trees
         species_probabilities = species_predictor(tree_images, classifier_model)
 
         prefix = file.split('.')[0]
         prefix1 = prefix.split('/')[0]
         prefix2 = prefix.split('/')[1]
 
+        # write inference results to disk
         with open(image_folder + '/' + prefix2 + '_inference.p', 'wb') as handle:
-            pickle.dump({"tree_images": tree_images, "species": class_indices, "species_probabilities": species_probabilities, "image": unscaled_image, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
-
+            #pickle.dump({"tree_images": tree_images, "species": class_indices, "species_probabilities": species_probabilities, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
+            pickle.dump({ "species": class_indices, "species_probabilities": species_probabilities, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
 
 
 def parse_args(args):

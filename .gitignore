@@ -4,3 +4,4 @@
 data/**/*.png
 data/**/*.jpg
 data/**/*.csv
+models/valid_photos/*.jpg
