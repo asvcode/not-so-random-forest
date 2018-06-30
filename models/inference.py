@@ -26,7 +26,7 @@ from keras_retinanet.utils.image import read_image_bgr, preprocess_image, \
 
 # import custom modules
 sys.path.append("..")
-from utils.image_analysis import extract_objects
+from utils.image_analysis import extract_patches
 
 
 def get_session():
@@ -81,13 +81,14 @@ def object_detector(file, detector_model):
 
     # extract tree patches from image
     boxes /= scale
-    tree_patches = extract_objects(unscaled_image, boxes[0],
+    tree_patches = extract_patches(unscaled_image, boxes[0],
                                    scores[0], score_threshold=SCORE_THRESHOLD)
     valid_boxes = [box for i, box in enumerate(
         boxes[0]) if scores[0][i] > SCORE_THRESHOLD]
-
+    valid_scores = [score for i, score in enumerate(
+        scores[0]) if scores[0][i] > SCORE_THRESHOLD]
     detector_output = (tree_patches, unscaled_image,
-                       valid_boxes, SCORE_THRESHOLD)
+                       valid_boxes, valid_scores, SCORE_THRESHOLD)
     return detector_output
 
 
@@ -148,20 +149,20 @@ def tree_extractor(image_folder, detector, classifier):
         print(file)
 
         # running object detector on image to detect trees
-        (tree_patches, unscaled_image, valid_boxes, score_threshold) = \
-            object_detector(file, detector_model)
+        (tree_patches, unscaled_image, valid_boxes, valid_scores,
+         score_threshold) = object_detector(file, detector_model)
 
         # running species classifier on detected trees
         species_probabilities = species_predictor(tree_patches,
                                                   classifier_model)
-        prefix = os.path.basename(file)('.')[0]
+        prefix = os.path.basename(file).split('.')[0]
 
         # write inference results to disk
         with open(image_folder + '/' + prefix +
                   '_inference.p', 'wb') as handle:
             pickle.dump({"species": class_indices,
                          "species_probabilities": species_probabilities,
-                         "boxes": valid_boxes,
+                         "boxes": valid_boxes, "scores": valid_scores,
                          "score_threshold": score_threshold}, handle)
 
 

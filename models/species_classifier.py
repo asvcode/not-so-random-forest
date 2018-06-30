@@ -18,7 +18,7 @@ import argparse
 # set constants
 IMAGE_SHAPE = (224, 224, 3)
 BATCH_SIZE = 20
-EPOCHS = 20
+EPOCHS = 1
 
 
 def custom_cnn():
@@ -66,7 +66,7 @@ def attach_top(base_model, n_classes):
     x = Flatten()(x)
     x = Dense(128, activation="relu")(x)
     x = Dense(64, activation="relu")(x)
-    output = Dense(activation="softmax", name="y")(x)
+    output = Dense(n_classes, activation="softmax", name="y")(x)
 
     return output
 
@@ -88,10 +88,10 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
     image_generator = ImageDataGenerator(rescale=1./255)
     train_generator = image_generator.flow_from_directory(
         image_dir + '/train/', batch_size=BATCH_SIZE,
-        target_size=(224, 224), class_mode='categorical')
+        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]), class_mode='categorical')
     validation_generator = image_generator.flow_from_directory(
         image_dir + '/validate/', batch_size=BATCH_SIZE,
-        target_size=(224, 224), class_mode='categorical')
+        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]), class_mode='categorical')
 
     # instantiate model
     if classifier == 'InceptionV3':
@@ -131,17 +131,18 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
         validation_steps=len(validation_generator.filenames)//BATCH_SIZE)
 
     # save model, history and class indices to file
-    model_name = classifier
+    model_name = classifier + '_species_classifier'
     if suffix:
         model_name = model_name + '_' + suffix
     filepath = 'saved_models/species_classifiers/' + model_name + '.h5'
-    model.save(filepath + '.h5')
+    model.save(filepath)
     pickle.dump(history.history, open(
      'saved_models/species_classifiers/' + model_name +
      '_history.p', 'wb'))
     pickle.dump(train_generator.class_indices, open(
         'saved_models/species_classifiers/' + model_name +
         '_class_indices.p', 'wb'))
+    print('Model saved to ' + filepath)
 
 
 # argument parser
@@ -153,7 +154,7 @@ def parse_args(args):
         default='../data/classification/')
     parser.add_argument(
         '--classifier', help='Model for species classification.',
-        default='InceptionV3')
+        default='ResNet50')
     parser.add_argument(
         '--freeze_backbone', help='Switch to freeze layers in base model.',
         action='store_true')
