@@ -1,49 +1,61 @@
 #!/usr/bin/env python
 
 # import miscellaneous modules
+from PIL import Image
 import argparse
-import os
 import sys
 import glob
-import pandas as pd
 import pickle
 import tensorflow as tf
 import cv2
 import numpy as np
 import time
-from PIL import Image
-import matplotlib.pyplot as plt
 import imghdr
+import os
+
+
+# import keras
+from keras import backend
+from keras.preprocessing import image
+from keras.models import load_model
+
+# import keras_retinanet modules
+from keras_retinanet import models
+from keras_retinanet.utils.image import read_image_bgr, preprocess_image, \
+ resize_image
 
 # import custom modules
 sys.path.append("..")
 from utils.image_analysis import extract_objects
 
-# import keras
-import keras
-from keras import backend
-from keras.preprocessing import image
-from keras.models import load_model
-from keras.utils.generic_utils import CustomObjectScope
-
-
-# import keras_retinanet
-from keras_retinanet import models
-from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
-from keras_retinanet.utils.visualization import draw_box, draw_caption
-from keras_retinanet.utils.colors import label_color
-
 
 def get_session():
+    """returns a tensorflow session
+
+    Args:
+        None
+    Returns:
+        tf.Session : tensorflow session
+
+    """
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
 
-# function to predict bounding boxes on objects in an image
+
 def object_detector(file, detector_model):
+    """runs object detector on images to detect trees
 
-    score_threshold = 0.5
+    Args:
+        file : path to image
+        detector_model: tree detector model
+    Returns:
+        detector_output : tuple contanining detector output
 
+    """
+
+    # set constants
+    SCORE_THRESHOLD = 0.5
 
     image = read_image_bgr(file)
     image = preprocess_image(image)
@@ -58,57 +70,75 @@ def object_detector(file, detector_model):
     # drop alpha channel
     unscaled_image = unscaled_image[:, :, :3]
 
-
+    # bgr to rgb
     unscaled_image[:, :, ::-1].copy()
+
+    # run detector on image
     start = time.time()
-    boxes, scores, labels = detector_model.predict_on_batch(np.expand_dims(image, axis=0))
+    boxes, scores, labels = detector_model.predict_on_batch(
+                                                np.expand_dims(image, axis=0))
     print("detection time: ", time.time() - start)
 
-    # correct for image scale
+    # extract tree patches from image
     boxes /= scale
-    print(unscaled_image.shape)
-    tree_images = extract_objects(unscaled_image, boxes[0], scores[0], score_threshold=score_threshold)
-    valid_boxes = [box for i, box in enumerate(boxes[0]) if scores[0][i] > score_threshold]
+    tree_patches = extract_objects(unscaled_image, boxes[0],
+                                   scores[0], score_threshold=SCORE_THRESHOLD)
+    valid_boxes = [box for i, box in enumerate(
+        boxes[0]) if scores[0][i] > SCORE_THRESHOLD]
 
-    return (tree_images, unscaled_image, valid_boxes, score_threshold)
+    detector_output = (tree_patches, unscaled_image,
+                       valid_boxes, SCORE_THRESHOLD)
+    return detector_output
 
 
-# function to predict species given tree images
-def species_predictor(tree_images, classifier_model):
+def species_predictor(tree_patches, classifier_model):
+    """runs object detector on images to detect trees
 
+    Args:
+        tree_patches : list of tree patches
+        classifier_model : species classifier model
+    Returns:
+        species_probabilities : np array with species species_probabilities
 
-    resized_tree_images = []
-    for tree_image in tree_images:
+    """
+
+    resized_tree_patches = []
+    for tree_image in tree_patches:
         resized_tree_image = cv2.resize(tree_image, (224, 224))
         img = image.img_to_array(resized_tree_image)
         img = np.expand_dims(img, axis=0)
-        resized_tree_images.append(img)
-    if resized_tree_images:
-        resized_tree_images = np.vstack(resized_tree_images)
+        resized_tree_patches.append(img)
+    if resized_tree_patches:
+        resized_tree_patches = np.vstack(resized_tree_patches)
 
         start = time.time()
-        species_probabilities = classifier_model.predict(resized_tree_images)
+        species_probabilities = classifier_model.predict(resized_tree_patches)
         print("classification time: ", time.time() - start)
     else:
         species_probabilities = []
 
     return(species_probabilities)
 
-# function to direct calls to detector and classifier models and write inference results to disk
-def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
- classifier='date_palm_species_classifier_ResNet50_imagenet_1_epochs_unfrozen'):
 
+def tree_extractor(image_folder, detector, classifier):
+    """loads and passes images to detector and classifier models,
+        writes inference results to disk
 
+    Args:
+        image_folder : path to folder containing images
+        detector : path to detector model
+        classifier: path to classifier model
+    Returns:
+        None
+
+    """
+    # get tensorflow session
     backend.tensorflow_backend.set_session(get_session())
-    detector_model = models.load_model('./saved_models/tree_detectors/' + detector + '.h5', backbone_name='resnet50')
 
-    #custom fix for weird error while inferencing with MobileNet
-    #with CustomObjectScope({'relu6': keras.applications.mobilenet.mobilenet.relu6,'DepthwiseConv2D': keras.applications.mobilenet.mobilenet.layers.DepthwiseConv2D}):
-        #classifier_model = load_model(filepath='./saved_models/species_classifiers/' + classifier+'.h5')
-
-    classifier_model = load_model(filepath='./saved_models/species_classifiers/' + classifier+'.h5')
-    classifier_history = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_history.p', 'rb'))
-    class_indices = pickle.load(open('./saved_models/species_classifiers/' + classifier + '_class_indices.p', 'rb'))
+    detector_model = models.load_model(detector, backbone_name='resnet50')
+    classifier_model = load_model(filepath=classifier)
+    class_indices = pickle.load(open(classifier[:-3] +
+                                     '_class_indices.p', 'rb'))
 
     files = glob.glob(image_folder + '/*')
 
@@ -118,36 +148,45 @@ def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
         print(file)
 
         # running object detector on image to detect trees
-        (tree_images, unscaled_image, valid_boxes, score_threshold) = object_detector(file, detector_model)
+        (tree_patches, unscaled_image, valid_boxes, score_threshold) = \
+            object_detector(file, detector_model)
 
         # running species classifier on detected trees
-        species_probabilities = species_predictor(tree_images, classifier_model)
-
-        prefix = file.split('.')[0]
-        prefix1 = prefix.split('/')[0]
-        prefix2 = prefix.split('/')[1]
+        species_probabilities = species_predictor(tree_patches,
+                                                  classifier_model)
+        prefix = os.path.basename(file)('.')[0]
 
         # write inference results to disk
-        with open(image_folder + '/' + prefix2 + '_inference.p', 'wb') as handle:
-            #pickle.dump({"tree_images": tree_images, "species": class_indices, "species_probabilities": species_probabilities, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
-            pickle.dump({ "species": class_indices, "species_probabilities": species_probabilities, "boxes": valid_boxes, "score_threshold": score_threshold}, handle)
+        with open(image_folder + '/' + prefix +
+                  '_inference.p', 'wb') as handle:
+            pickle.dump({"species": class_indices,
+                         "species_probabilities": species_probabilities,
+                         "boxes": valid_boxes,
+                         "score_threshold": score_threshold}, handle)
 
 
+# argument parser
 def parse_args(args):
-    parser = argparse.ArgumentParser(description='Script for running inference on images.')
-    parser.add_argument('--dir', help='Folder containing images to run inference on.')
-    parser.add_argument('--detector', help='Model for tree detection.', default='resnet50_csv_50_epochs_inference')
-    parser.add_argument('--classifier', help ='Model for species classification.', default='date_palm_species_classifier_ResNet50_imagenet_1_epochs_unfrozen')
+    parser = argparse.ArgumentParser(
+        description='Script for running inference on images.')
+    parser.add_argument(
+        '--dir', help='Folder containing images to run inference on.',
+        default='./sample_images/')
+    parser.add_argument(
+        '--detector', help='Model for tree detection.')
+    parser.add_argument(
+        '--classifier', help='Model for species classification.')
     return parser.parse_args(args)
 
 
 def main(args=None):
-
     args = sys.argv[1:]
     args = parse_args(args)
 
     # extract trees
-    tree_extractor(image_folder=args.dir, detector=args.detector, classifier=args.classifier)
+    tree_extractor(image_folder=args.dir, detector=args.detector,
+                   classifier=args.classifier)
+
 
 if __name__ == '__main__':
     main()

@@ -15,6 +15,11 @@ import sys
 import pickle
 import argparse
 
+# set constants
+IMAGE_SHAPE = (224, 224, 3)
+BATCH_SIZE = 20
+EPOCHS = 20
+
 
 def custom_cnn():
     """constructs a custom CNN
@@ -26,7 +31,6 @@ def custom_cnn():
 
     """
     # set constants
-    IMAGE_SHAPE = (224, 224, 3)
     FILTER_SHAPE = (3, 3)
     POOL_SIZE = (2, 2)
 
@@ -67,8 +71,7 @@ def attach_top(base_model, n_classes):
     return output
 
 
-def train_classifier(image_dir, classifier, freeze_backbone=False, suffix='',
-                     epochs=20):
+def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
     """train species classifier on image data
 
     Args:
@@ -76,7 +79,6 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix='',
         classifier : string denoting species classifier model
         freeze_backbone : boolean for freezing backbone of classifier
         suffix : desired prefix to the model name
-        epochs : number of epochs
 
     Returns:
         None
@@ -84,22 +86,20 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix='',
     """
     # data generators
     image_generator = ImageDataGenerator(rescale=1./255)
-    batch_size = 20
-
     train_generator = image_generator.flow_from_directory(
-        image_dir + '/train/', batch_size=batch_size,
+        image_dir + '/train/', batch_size=BATCH_SIZE,
         target_size=(224, 224), class_mode='categorical')
     validation_generator = image_generator.flow_from_directory(
-        image_dir + '/validate/', batch_size=batch_size,
+        image_dir + '/validate/', batch_size=BATCH_SIZE,
         target_size=(224, 224), class_mode='categorical')
 
     # instantiate model
     if classifier == 'InceptionV3':
         base_model = InceptionV3(weights="imagenet", include_top=False,
-                                 input_shape=(224, 224, 3))
+                                 input_shape=IMAGE_SHAPE)
     elif classifier == 'ResNet50':
         base_model = ResNet50(weights="imagenet", include_top=False,
-                              input_shape=(224, 224, 3))
+                              input_shape=IMAGE_SHAPE)
     elif classifier == 'Custom':
         base_model = custom_cnn()
 
@@ -126,12 +126,12 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix='',
 
     history = model.fit_generator(
         train_generator,
-        steps_per_epoch=len(train_generator.filenames)//batch_size,
-        epochs=epochs, validation_data=validation_generator,
-        validation_steps=len(validation_generator.filenames)//batch_size)
+        steps_per_epoch=len(train_generator.filenames)//BATCH_SIZE,
+        epochs=EPOCHS, validation_data=validation_generator,
+        validation_steps=len(validation_generator.filenames)//BATCH_SIZE)
 
     # save model, history and class indices to file
-    model_name = classifier + '_' + str(epochs) + 'epochs'
+    model_name = classifier
     if suffix:
         model_name = model_name + '_' + suffix
     filepath = 'saved_models/species_classifiers/' + model_name + '.h5'
@@ -155,13 +155,12 @@ def parse_args(args):
         '--classifier', help='Model for species classification.',
         default='InceptionV3')
     parser.add_argument(
-        '--freeze_backbone', help='Switch to freeze layers in base model',
+        '--freeze_backbone', help='Switch to freeze layers in base model.',
         action='store_true')
     parser.add_argument(
         '--suffix',
-        help='suffix to add to name of the file that will be saved',
+        help='Suffix to add to name of the file that will be saved.',
         default='')
-    parser.add_argument('--epochs', default='20')
     return parser.parse_args(args)
 
 
@@ -172,7 +171,7 @@ def main(args=None):
     # pass arguments to classifier
     train_classifier(image_dir=args.dir, classifier=args.classifier,
                      freeze_backbone=args.freeze_backbone,
-                     suffix=args.suffix, epochs=int(args.epochs))
+                     suffix=args.suffix)
 
 
 if __name__ == '__main__':
