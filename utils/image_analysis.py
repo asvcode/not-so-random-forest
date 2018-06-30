@@ -8,5 +8,5 @@ def extract_objects(image, boxes, scores, score_threshold):
         if scores[i] < score_threshold:
             continue
         b = np.array(b).astype(int)
-        objects.append(unscaled_image[b[1]:b[3], b[0]:b[2], :])
+        objects.append(image[b[1]:b[3], b[0]:b[2], :])
     return objects

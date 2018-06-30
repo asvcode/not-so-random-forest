@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 import imghdr
 
 # import custom modules
-from utils import extract_objects
+sys.path.append("..")
+from utils.image_analysis import extract_objects
 
 # import keras
 import keras
@@ -101,7 +102,7 @@ def tree_extractor(image_folder, detector='resnet50_csv_50_epochs_inference',
     backend.tensorflow_backend.set_session(get_session())
     detector_model = models.load_model('./saved_models/tree_detectors/' + detector + '.h5', backbone_name='resnet50')
 
-    # custom fix for weird error during inferncing with MobileNet
+    #custom fix for weird error while inferencing with MobileNet
     #with CustomObjectScope({'relu6': keras.applications.mobilenet.mobilenet.relu6,'DepthwiseConv2D': keras.applications.mobilenet.mobilenet.layers.DepthwiseConv2D}):
         #classifier_model = load_model(filepath='./saved_models/species_classifiers/' + classifier+'.h5')
 
