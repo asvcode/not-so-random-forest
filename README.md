@@ -10,3 +10,4 @@ Trees are an important part of a city’s landscape, providing a variety of bene
 
 Because the availability of labeled tree imagery is limited, I build and train CNN models on hand-labeled tree images. Installation instructions and model description are given below.
 
+[Slides](http://bit.ly/notsorandomforest)
