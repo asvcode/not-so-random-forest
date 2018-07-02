@@ -14,6 +14,8 @@ Because labeled tree imagery is not freely available, I build and train models o
 
 Google slides can be found [here](http://bit.ly/notsorandomforest)
 
+![Image](example.png)
+
 
 ## Installation
 
