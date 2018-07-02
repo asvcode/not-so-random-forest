@@ -26,15 +26,14 @@ Python packages required for this project are listed in `requirements.txt` and c
 
 Training object detectors requires bounding box annotations of  objects of interest. Getting quality bounding box annotations of trees proved to be surprisingly hard. While Imagenet provides tree annotations ([here](http://image-net.org/download-bboxes)), I found the quality of these annotations to be far from desirable. For example, many of these annotations bounded only foliage and not entire trees.
 
-I ultimately decided to take it upon myself to create bounding box data for trees. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating bounding box annotations for 300 street view images that my be found in the [data](data/detection) folder.
+I ultimately decided to take it upon myself to create bounding box data for trees. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be found in the [data/detection](data/detection) folder.
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
 
-
 ## Models
 
-Tree detection and species classification proceeds in two steps. First a detection model locates trees in an image of interest and outputs the detected trees as standalone images. The outputs of the detector are then piped to a classifier that predicts species.
+Tree detection and species classification proceeds in two steps. First a detection model locates trees in an image of interest and outputs detected trees as standalone images. The outputs of the detector are then piped to a classifier that predicts species.
 
 ### Object Detection
 
@@ -44,7 +43,7 @@ Rather than building RetinaNet from scratch, I adapt an existing Keras implement
 
 ### Species Classification
 
-Species classification proved challenging due to the limited species data I could scrape from Google images (~100 images each for 18 species). Inference with out-of-the-box models topped out at 50% validation accuracy which is significantly better than random guessing on 18 classes but nowhere near human-level accuracy. Applying aggressive data augmentation and techniques that aim to prevent overfitting [e.g: regularization, dropout] improved the accuracy upto 68%. I am currently working on fine tuning approaches to improve the accuracy further.
+Species classification proved challenging due to the limited amount of species data I could scrape from Google images (~100 images each for 18 species). Inference with out-of-the-box models topped out at 50% validation accuracy which is significantly better than random guessing on 18 classes but nowhere near human-level accuracy. Applying aggressive data augmentation and techniques that aim to prevent overfitting [e.g: regularization, dropout] improved the accuracy upto 68%. I am currently working on fine tuning approaches to improve the accuracy further.
 
 A different approach that's giving promising results is the [One-vs-Rest](https://en.wikipedia.org/wiki/Multiclass_classification) strategy. This method entails training a single classifier per species, with the images of that species as positive examples and all other images as negative. At inference time, all 18 classifiers are applied to the unseen image and the species corresponding to the classifier that gives the highest probability is output as the prediction. This approach yielded validation accuracies as high as 90%.
 
