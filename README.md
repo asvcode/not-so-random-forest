@@ -1,6 +1,6 @@
 # Not So Random Forest
 
-Automating large-scale urban tree monitoring
+Tree monitoring, at scale
 
 #### Abstract
 
@@ -24,13 +24,13 @@ Python packages required for this project are listed in `requirements.txt` and c
 
 ## Data
 
-Training object detectors requires bounding box annotations of  objects of interest. Getting quality bounding box annotations of trees proved to be surprisingly hard. While Imagenet provides tree annotations ([here](http://image-net.org/download-bboxes)), I found the quality of these annotations to be far from desirable. For example, many of these annotations bounded only foliage and not entire trees.
+Training object detectors requires bounding box annotations of objects of interest. Getting quality bounding box annotations of trees proved to be surprisingly hard. While Imagenet provides tree annotations ([here](http://image-net.org/download-bboxes)), I found the quality of these annotations to be far from desirable. For example, many of these annotations bounded only foliage and not entire trees.
 
 I ultimately decided to create my own tree annotations. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be found in the [data/detection](data/detection) folder.
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
-For the species classification task, I obtained training data from google images using the scripts available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classifciation task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant background. A modified version of photo_splitter.py is included in the [utils](utils) folder.
+For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classifciation task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The images can be found in [data/classifcation](data/classification).
 
 
 ## Models
@@ -52,3 +52,12 @@ A different approach that's giving promising results is the [One-vs-Rest](https:
 A drawback of the One-vs-Rest approach is that it takes a longer time for inference than a single model. This can be mitigated by replacing InceptionV3 with a simpler model as the backbone. This may be done by including a simpler model of choice under `custom_nn()` in `./models/species_classifier.py` and calling it from the command line using the `Custom` argument:  
 
  `python species_classifier.py --dir <path to image folder> --classifier Custom`
+
+
+ ## Inference
+
+ Inference maybe run on desired images using inference.py in the [models](models) folder:  
+
+ `python inference.py --dir <path_to_image_folder> --detector <path_to_classifier_model> --classifier <path_to_detector_model>`
+
+ Inference results are pickled and saved in the same directory as images. Sample results are visualized [here](models/visualize_results.ipynb)
