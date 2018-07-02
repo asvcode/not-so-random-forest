@@ -6,7 +6,7 @@ from keras_retinanet.utils.image import preprocess_image, resize_image
 from keras_retinanet.utils.visualization import draw_box
 
 # import custom modules
-from image_analysis import extract_patches
+from utils.image_analysis import extract_patches
 
 # import miscellaneous modules
 import pickle
@@ -63,9 +63,14 @@ def visualize_inference(image_path):
 
     fig, axes = plt.subplots(nrows=1, ncols=len(tree_patches),
                              figsize=(20, 10))
-    for i, ax in enumerate(axes):
-        ax.imshow(tree_patches[i])
-        ax.axis('off')
+    if len(tree_patches) > 1:
+        for i, ax in enumerate(axes):
+            ax.imshow(tree_patches[i])
+            ax.axis('off')
+    else:
+        axes.imshow(tree_patches[0])
+        axes.axis('off')
+
     print('Species indexes: ')
     print(inference['species'])
     print(inference['species_probabilities'])

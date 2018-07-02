@@ -4,11 +4,9 @@
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Activation, Flatten, Dense
+from keras.layers import Activation, Flatten, Dense, Dropout
 from keras.applications.inception_v3 import InceptionV3
 from keras.applications.resnet50 import ResNet50
-from keras.models import Model
-from keras.optimizers import Adam
 
 # import miscellaneous modules
 import sys
@@ -17,8 +15,8 @@ import argparse
 
 # set constants
 IMAGE_SHAPE = (224, 224, 3)
-BATCH_SIZE = 20
-EPOCHS = 1
+BATCH_SIZE = 5
+EPOCHS = 30
 
 
 def custom_cnn():
@@ -27,7 +25,7 @@ def custom_cnn():
     Args:
         None
     Returns:
-        model : CNN with n_layers
+        model : custom CNN
 
     """
     # set constants
@@ -62,13 +60,16 @@ def attach_top(base_model, n_classes):
         output : full model
 
     """
-    x = base_model.output
-    x = Flatten()(x)
-    x = Dense(128, activation="relu")(x)
-    x = Dense(64, activation="relu")(x)
-    output = Dense(n_classes, activation="softmax", name="y")(x)
+    base_model.add(Flatten())
+    base_model.add(Dense(64))
+    base_model.add(Activation('relu', name='activation_t1'))
+    base_model.add(Dropout(0.5))
+    base_model.add(Dense(1))
+    base_model.add(Activation('sigmoid', name='activation_t2'))
+    # base_model.add(Dense(n_classes))
+    # base_model.add(Activation('softmax', name='activation_t2'))
 
-    return output
+    return base_model
 
 
 def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
@@ -85,13 +86,17 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
 
     """
     # data generators
-    image_generator = ImageDataGenerator(rescale=1./255)
+    image_generator = ImageDataGenerator(rescale=1./255, shear_range=0.2,
+                                         zoom_range=0.2,
+                                         horizontal_flip=True)
     train_generator = image_generator.flow_from_directory(
         image_dir + '/train/', batch_size=BATCH_SIZE,
-        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]), class_mode='categorical')
+        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]),
+        shuffle=True, class_mode='binary')
     validation_generator = image_generator.flow_from_directory(
         image_dir + '/validate/', batch_size=BATCH_SIZE,
-        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]), class_mode='categorical')
+        target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]),
+        shuffle=True, class_mode='binary')
 
     # instantiate model
     if classifier == 'InceptionV3':
@@ -114,15 +119,13 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
             layer.trainable = True
 
     # attach custom classification layers on top of base model
-    output = attach_top(base_model, len(train_generator.class_indices.keys()))
-
-    model = Model(inputs=base_model.input, outputs=output)
+    model = attach_top(base_model, len(train_generator.class_indices.keys()))
 
     print(model.summary())
 
-    model.compile(loss='categorical_crossentropy',
+    model.compile(loss='binary_crossentropy',
                   metrics=['accuracy'],
-                  optimizer=Adam(lr=0.0001, clipvalue=0.5))
+                  optimizer='rmsprop')
 
     history = model.fit_generator(
         train_generator,

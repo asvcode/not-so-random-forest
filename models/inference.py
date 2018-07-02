@@ -104,16 +104,16 @@ def species_predictor(tree_patches, classifier_model):
     """
 
     resized_tree_patches = []
-    for tree_image in tree_patches:
-        resized_tree_image = cv2.resize(tree_image, (224, 224))
-        img = image.img_to_array(resized_tree_image)
+    for tree_patch in tree_patches:
+        resized_tree_patch = cv2.resize(tree_patch, (224, 224))
+        img = image.img_to_array(resized_tree_patch)
         img = np.expand_dims(img, axis=0)
         resized_tree_patches.append(img)
     if resized_tree_patches:
         resized_tree_patches = np.vstack(resized_tree_patches)
 
         start = time.time()
-        species_probabilities = classifier_model.predict(resized_tree_patches)
+        species_probabilities = classifier_model.predict_classes(resized_tree_patches)
         print("classification time: ", time.time() - start)
     else:
         species_probabilities = []
@@ -138,9 +138,9 @@ def tree_extractor(image_folder, detector, classifier):
 
     detector_model = models.load_model(detector, backbone_name='resnet50')
     classifier_model = load_model(filepath=classifier)
-    class_indices = pickle.load(open(classifier[:-3] +
-                                     '_class_indices.p', 'rb'))
-
+    #class_indices = pickle.load(open(classifier[:-3] +
+                                     #'_class_indices.p', 'rb'))
+    class_indices = []
     files = glob.glob(image_folder + '/*')
 
     for file in files:
