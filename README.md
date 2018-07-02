@@ -14,6 +14,7 @@ Because labeled tree imagery is not freely available, I build and train models o
 
 Google slides can be found [here](http://bit.ly/notsorandomforest)
 
+
 ![Image](example.png)
 
 
@@ -30,7 +31,9 @@ Training object detectors requires bounding box annotations of objects of intere
 
 I ultimately decided to create my own tree annotations. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be downloaded from [dropbox](https://www.dropbox.com/s/uca05wzwkhe631y/annotations.zip?dl=0).
 
+
 ![Image](labeling_example.png)
+
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
