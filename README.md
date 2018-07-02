@@ -30,7 +30,7 @@ I ultimately decided to create my own tree annotations. I found [LabelImg](https
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
-For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classifciation task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The images can be found in [data/classifcation](data/classification).
+For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classification task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The images can be found in [data/classifcation](data/classification).
 
 
 ## Models
@@ -60,4 +60,4 @@ A drawback of the One-vs-Rest approach is that it takes a longer time for infere
 
  `python inference.py --dir <path_to_image_folder> --detector <path_to_classifier_model> --classifier <path_to_detector_model>`
 
- Inference results are pickled and saved in the same directory as images. Sample results are visualized [here](models/visualize_results.ipynb)
+ Inference results are pickled and saved in the same directory as images. Sample results are visualized [here](models/visualize_results.ipynb).
