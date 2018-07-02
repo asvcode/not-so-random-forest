@@ -4,7 +4,7 @@ Tree monitoring, at scale
 
 #### Abstract
 
-Locate trees and identify species in street view imagery
+Locate trees and identify species in street view imagery.
 
 Trees are an important part of a city’s landscape, providing a variety of benefits. Maintaining a city’s tree cover is a costly affair, requiring thousands of volunteer hours and several hundred thousand dollars every year.
 
@@ -28,11 +28,13 @@ Python packages required for this project are listed in `requirements.txt` and c
 
 Training object detectors requires bounding box annotations of objects of interest. Getting quality bounding box annotations of trees proved to be surprisingly hard. While Imagenet provides tree annotations ([here](http://image-net.org/download-bboxes)), I found the quality of these annotations to be far from desirable. For example, many of these annotations bounded only foliage and not entire trees.
 
-I ultimately decided to create my own tree annotations. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be found in the [data/detection](data/detection) folder.
+I ultimately decided to create my own tree annotations. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be downloaded from [dropbox](https://www.dropbox.com/s/uca05wzwkhe631y/annotations.zip?dl=0).
+
+![Image](labeling_example.png)
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
-For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classification task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The images can be from [dropbox](https://www.dropbox.com/s/uca05wzwkhe631y/annotations.zip?dl=0).
+Since this project w For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classification task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The dataset that the classifier was trained on can be downloaded from [dropbox](https://www.dropbox.com/s/dwokzimqe7b7s3c/classification.zip?dl=0)
 
 
 ## Models
