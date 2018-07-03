@@ -2,7 +2,7 @@
 
 Tree monitoring, at scale
 
-#### Abstract
+#### Abstract  
 
 Locate trees and identify species in street view imagery.
 
@@ -37,7 +37,7 @@ I ultimately decided to create my own tree annotations. I found [LabelImg](https
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
 
-Since this project w For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classification task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The dataset that the classifier was trained on can be downloaded from [dropbox](https://www.dropbox.com/s/dwokzimqe7b7s3c/classification.zip?dl=0)
+For the species classification task, I obtained training data from google images using javascript snippets available [here](https://www.pyimagesearch.com/2017/12/04/how-to-create-a-deep-learning-dataset-using-google-images/). Many of the images included background that is irrelevant to the classification task. I used [photo_splitter.py](https://github.com/dnouri/photo_splitter) to rapidly iterate through the downloaded images and crop out irrelevant backgrounds and isolate trees of interest. A modified version of photo_splitter.py is included in the [utils](utils) folder. The dataset that the classifier was trained on can be downloaded from [dropbox](https://www.dropbox.com/s/dwokzimqe7b7s3c/classification.zip?dl=0)
 
 
 ## Models
@@ -58,7 +58,7 @@ A different approach that's giving promising results is the [One-vs-Rest](https:
 
 A drawback of the One-vs-Rest approach is that it takes a longer time for inference than a single model. This can be mitigated by replacing InceptionV3 with a simpler model as the backbone. This may be done by including a simpler model of choice under `custom_nn()` in `./models/species_classifier.py` and calling it from the command line using the `Custom` argument:  
 
- `python species_classifier.py --dir <path to image folder> --classifier Custom`
+ `python species_classifier.py --dir <path_to_image_folder> --classifier Custom`
 
 
  ## Inference
