@@ -15,7 +15,7 @@ Because labeled tree imagery is not freely available, I build and train models o
 Google slides can be found [here](http://bit.ly/notsorandomforest)
 
 
-![Image](example.png)
+![Image](output_example.png)
 
 
 ## Installation
@@ -36,7 +36,7 @@ Training object detectors requires bounding box annotations of objects of intere
 I ultimately decided to create my own tree annotations. I found [LabelImg](https://github.com/tzutalin/labelImg) to be a very useful tool for this purpose. I ended up creating annotations for 300 street view images that may be downloaded from [dropbox](https://www.dropbox.com/s/uca05wzwkhe631y/annotations.zip?dl=0).
 
 
-![Image](labeling_example.png)
+![Image](annotation_example.png)
 
 
 LabelImg outputs annotations as XML files in the PASCAL VOC format that need to be converted to CSV for training RetinaNet. To facilitate this conversion, I include `xml_to_csv.py` in the [utils](utils) folder.
@@ -58,7 +58,7 @@ Rather than building RetinaNet from scratch, I adapted an existing Keras impleme
 
 Since I was consulting with the city of Athens [Greece] for this project, I focused on tree species in that city. I obtained a list of the 18 most commonly occurring species in Athens from a [sample survey](https://www.tandfonline.com/doi/abs/10.1080/03071375.1988.9756380).
 
-It is often useful to approach classification tasks using a baseline model and then improve upon the results by either tuning the model or choosing a more complex model that is able to generalize better. Accordingly, I decided to start with a non deep learning approach. Specifically, I resorted to Principal Component Analysis to extract the most important features of trees [dubbed 'eigentrees'] and trained an SVM on the projectionos of the tree images onto the eigentrees. This relatively simple approach did not yield particularly useful results with the mean precision and recall across tree species being 0.20. I included a notebook detailing the analysis [here](models/training/species_classifier_baseline_pca_svm.ipynb).
+It is often useful to approach classification tasks using a baseline model and then improve upon the results by either tuning the model or choosing a more complex model that is able to generalize better. Accordingly, I decided to start with a non deep learning approach. Specifically, I resorted to Principal Component Analysis to extract the most important features of trees [dubbed 'eigentrees'] and trained an SVM on the projections of the training data onto the eigentrees. This relatively simple approach did not yield particularly useful results with the mean precision and recall across tree species being 0.20. I included a notebook detailing the analysis [here](models/training/species_classifier_baseline_pca_svm.ipynb).
 
 Since the baseline model did not have a whole lot of predictive power, I decided to use deep learning for classification. This however proved challenging due to the limited amount of species data I could scrape from Google images (~100 images each for 18 species). Inference with out-of-the-box models topped out at 50% validation accuracy which is significantly better than random guessing on 18 classes but nowhere near human-level accuracy. Applying aggressive data augmentation and techniques that aim to prevent overfitting [e.g: regularization, dropout] improved the accuracy upto 68%. I am currently working on [fine tuning](https://flyyufelix.github.io/2016/10/03/fine-tuning-in-keras-part1.html) approaches to improve the accuracy further.
 
