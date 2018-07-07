@@ -113,7 +113,8 @@ def species_predictor(tree_patches, classifier_model):
         resized_tree_patches = np.vstack(resized_tree_patches)
 
         start = time.time()
-        species_probabilities = classifier_model.predict_classes(resized_tree_patches)
+        species_probabilities = classifier_model.predict_classes(
+         resized_tree_patches)
         print("classification time: ", time.time() - start)
     else:
         species_probabilities = []

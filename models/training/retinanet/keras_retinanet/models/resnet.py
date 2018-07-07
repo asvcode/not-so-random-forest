@@ -19,6 +19,7 @@ import keras_resnet
 import keras_resnet.models
 from . import retinanet
 from . import Backbone
+from keras.applications import imagenet_utils
 
 
 class ResNetBackbone(Backbone):
@@ -50,7 +51,7 @@ class ResNetBackbone(Backbone):
         elif depth == 152:
             checksum = '6ee11ef2b135592f8031058820bb9e71'
 
-        return keras.applications.imagenet_utils.get_file(
+        return imagenet_utils.get_file(
             filename,
             resource,
             cache_subdir='models',

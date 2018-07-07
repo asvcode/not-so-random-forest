@@ -27,7 +27,7 @@ Python packages required for this project are listed in `requirements.txt` and c
 
 ## Examples
 
-A notebook with a step-by-step list of instructions to run inference on images is found here.
+A notebook with a step-by-step list of instructions to train models and run inference on images is found here.
 
 ## Data
 
