@@ -1,6 +1,6 @@
 # Not So Random Forest
 
-Tree monitoring, at scale
+Towards automating large-scale urban tree monitoring.
 
 #### Abstract  
 
