@@ -14,7 +14,7 @@ def extract_patches(image, boxes, scores, score_threshold):
         score_threshold : threshold used for suppressing bounding boxes
 
     Returns:
-        patches : image patches circumscribed by bounding boxes
+        patches : image patches bound by bounding boxes
 
     """
     patches = []

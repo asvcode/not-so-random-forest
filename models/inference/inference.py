@@ -13,7 +13,6 @@ import time
 import imghdr
 import os
 
-
 # import keras
 from keras import backend
 from keras.preprocessing import image
@@ -25,7 +24,7 @@ from keras_retinanet.utils.image import read_image_bgr, preprocess_image, \
  resize_image
 
 # import custom modules
-sys.path.append("..")
+sys.path.append(".")
 from utils.image_analysis import extract_patches
 
 
@@ -43,19 +42,17 @@ def get_session():
     return tf.Session(config=config)
 
 
-def object_detector(file, detector_model):
+def object_detector(file, detector_model, score_threshold):
     """runs object detector on images to detect trees
 
     Args:
         file : path to image
-        detector_model: tree detector model
+        detector_model : tree detector model
+        score_threshold : score threshold for non-max suppression
     Returns:
         detector_output : tuple contanining detector output
 
     """
-
-    # set constants
-    SCORE_THRESHOLD = 0.5
 
     image = read_image_bgr(file)
     image = preprocess_image(image)
@@ -82,13 +79,13 @@ def object_detector(file, detector_model):
     # extract tree patches from image
     boxes /= scale
     tree_patches = extract_patches(unscaled_image, boxes[0],
-                                   scores[0], score_threshold=SCORE_THRESHOLD)
+                                   scores[0], score_threshold)
     valid_boxes = [box for i, box in enumerate(
-        boxes[0]) if scores[0][i] > SCORE_THRESHOLD]
+        boxes[0]) if scores[0][i] > score_threshold]
     valid_scores = [score for i, score in enumerate(
-        scores[0]) if scores[0][i] > SCORE_THRESHOLD]
+        scores[0]) if scores[0][i] > score_threshold]
     detector_output = (tree_patches, unscaled_image,
-                       valid_boxes, valid_scores, SCORE_THRESHOLD)
+                       valid_boxes, valid_scores, score_threshold)
     return detector_output
 
 
@@ -113,7 +110,7 @@ def species_predictor(tree_patches, classifier_model):
         resized_tree_patches = np.vstack(resized_tree_patches)
 
         start = time.time()
-        species_probabilities = classifier_model.predict_classes(
+        species_probabilities = classifier_model.predict(
          resized_tree_patches)
         print("classification time: ", time.time() - start)
     else:
@@ -122,14 +119,16 @@ def species_predictor(tree_patches, classifier_model):
     return(species_probabilities)
 
 
-def tree_extractor(image_folder, detector, classifier):
+def tree_extractor(image_folder, detector, classifier, score_threshold):
     """loads and passes images to detector and classifier models,
         writes inference results to disk
 
     Args:
         image_folder : path to folder containing images
         detector : path to detector model
-        classifier: path to classifier model
+        classifier : path to classifier model
+        score_threshold : score threshold for non-max suppression of
+                          bounding boxes
     Returns:
         None
 
@@ -151,7 +150,8 @@ def tree_extractor(image_folder, detector, classifier):
 
         # running object detector on image to detect trees
         (tree_patches, unscaled_image, valid_boxes, valid_scores,
-         score_threshold) = object_detector(file, detector_model)
+         score_threshold) = object_detector(
+                                file, detector_model, score_threshold)
 
         # running species classifier on detected trees
         species_probabilities = species_predictor(tree_patches,
@@ -161,8 +161,7 @@ def tree_extractor(image_folder, detector, classifier):
         # write inference results to disk
         with open(image_folder + '/' + prefix +
                   '_inference.p', 'wb') as handle:
-            pickle.dump({"species": class_indices,
-                         "species_probabilities": species_probabilities,
+            pickle.dump({"species_probabilities": species_probabilities,
                          "boxes": valid_boxes, "scores": valid_scores,
                          "score_threshold": score_threshold}, handle)
 
@@ -172,12 +171,16 @@ def parse_args(args):
     parser = argparse.ArgumentParser(
         description='Script for running inference on images.')
     parser.add_argument(
-        '--dir', help='Folder containing images to run inference on.',
+        '--image_dir', help='Folder containing images to run inference on.',
         default='./sample_images/')
     parser.add_argument(
-        '--detector', help='Model for tree detection.')
+        '--detector_path', help='Model for tree detection.')
     parser.add_argument(
-        '--classifier', help='Model for species classification.')
+        '--classifier_path', help='Model for species classification.')
+    parser.add_argument(
+        '--score_threshold',
+        help='Score threshold for non-max suppression of bounding boxes.',
+        type=float, default=0.5)
     return parser.parse_args(args)
 
 
@@ -186,8 +189,9 @@ def main(args=None):
     args = parse_args(args)
 
     # extract trees
-    tree_extractor(image_folder=args.dir, detector=args.detector,
-                   classifier=args.classifier)
+    tree_extractor(image_folder=args.image_dir, detector=args.detector_path,
+                   classifier=args.classifier_path,
+                   score_threshold=args.score_threshold)
 
 
 if __name__ == '__main__':

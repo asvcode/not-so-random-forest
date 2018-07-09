@@ -71,6 +71,5 @@ def visualize_inference(image_path):
         axes.imshow(tree_patches[0])
         axes.axis('off')
 
-    print('Species indexes: ')
-    print(inference['species'])
+    print('Species probabilities: ')
     print(inference['species_probabilities'])

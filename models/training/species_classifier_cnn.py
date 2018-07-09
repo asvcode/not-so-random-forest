@@ -15,8 +15,6 @@ import argparse
 
 # set constants
 IMAGE_SHAPE = (224, 224, 3)
-BATCH_SIZE = 5
-EPOCHS = 30
 
 
 def custom_cnn():
@@ -72,7 +70,8 @@ def attach_top(base_model, n_classes):
     return base_model
 
 
-def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
+def train_classifier(image_dir, classifier, save_dir, epochs, batch_size,
+                     freeze_backbone=False, suffix=''):
     """train species classifier on image data
 
     Args:
@@ -80,7 +79,8 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
         classifier : string denoting species classifier model
         freeze_backbone : boolean for freezing backbone of classifier
         suffix : desired prefix to the model name
-
+        epochs : number of epochs
+        batch_size : batch size
     Returns:
         None
 
@@ -90,11 +90,11 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
                                          zoom_range=0.2,
                                          horizontal_flip=True)
     train_generator = image_generator.flow_from_directory(
-        image_dir + '/train/', batch_size=BATCH_SIZE,
+        image_dir + '/train/', batch_size=batch_size,
         target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]),
         shuffle=True, class_mode='binary')
     validation_generator = image_generator.flow_from_directory(
-        image_dir + '/validate/', batch_size=BATCH_SIZE,
+        image_dir + '/validate/', batch_size=batch_size,
         target_size=(IMAGE_SHAPE[0], IMAGE_SHAPE[1]),
         shuffle=True, class_mode='binary')
 
@@ -129,22 +129,22 @@ def train_classifier(image_dir, classifier, freeze_backbone=False, suffix=''):
 
     history = model.fit_generator(
         train_generator,
-        steps_per_epoch=len(train_generator.filenames)//BATCH_SIZE,
-        epochs=EPOCHS, validation_data=validation_generator,
-        validation_steps=len(validation_generator.filenames)//BATCH_SIZE)
+        steps_per_epoch=len(train_generator.filenames)//batch_size,
+        epochs=epochs, validation_data=validation_generator,
+        validation_steps=len(validation_generator.filenames)//batch_size)
 
     # save model, history and class indices to file
     model_name = classifier + '_species_classifier'
     if suffix:
         model_name = model_name + '_' + suffix
-    filepath = 'saved_models/species_classifiers/' + model_name + '.h5'
+    filepath = save_dir + model_name + '.h5'
     model.save(filepath)
-    pickle.dump(history.history, open(
-     'saved_models/species_classifiers/' + model_name +
-     '_history.p', 'wb'))
-    pickle.dump(train_generator.class_indices, open(
-        'saved_models/species_classifiers/' + model_name +
-        '_class_indices.p', 'wb'))
+    #pickle.dump(history.history, open(
+     #save_dir + model_name +
+     #'_history.p', 'wb'))
+    #pickle.dump(train_generator.class_indices, open(
+        #save_dir + model_name +
+        #'_class_indices.p', 'wb'))
     print('Model saved to ' + filepath)
 
 
@@ -153,8 +153,12 @@ def parse_args(args):
     parser = argparse.ArgumentParser(
         description='Script for training species classifier.')
     parser.add_argument(
-        '--dir', help='Folder containing training and validation images.',
+        '--image_dir',
+        help='Folder containing training and validation images.',
         default='../data/classification/')
+    parser.add_argument(
+        '--save_dir', help='Folder to save trained model.',
+        default='saved_models/species_classifiers/')
     parser.add_argument(
         '--classifier', help='Model for species classification.',
         default='ResNet50')
@@ -165,6 +169,12 @@ def parse_args(args):
         '--suffix',
         help='Suffix to add to name of the file that will be saved.',
         default='')
+    parser.add_argument(
+        '--epochs',
+        help='Number of epochs to train.', type=int, default=30)
+    parser.add_argument(
+        '--batch_size',
+        help='Batch size.', type=int, default=5)
     return parser.parse_args(args)
 
 
@@ -173,9 +183,10 @@ def main(args=None):
     args = parse_args(args)
 
     # pass arguments to classifier
-    train_classifier(image_dir=args.dir, classifier=args.classifier,
-                     freeze_backbone=args.freeze_backbone,
-                     suffix=args.suffix)
+    train_classifier(image_dir=args.image_dir, classifier=args.classifier,
+                     save_dir=args.save_dir, epochs=args.epochs,
+                     batch_size=args.batch_size,
+                     freeze_backbone=args.freeze_backbone, suffix=args.suffix)
 
 
 if __name__ == '__main__':
